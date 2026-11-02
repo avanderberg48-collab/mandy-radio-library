@@ -5,41 +5,30 @@ on:
     - cron: "*/25 * * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   heal:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
+
       - name: Look at the station
         id: check
         run: |
           set +e
-          info=$(curl -s -m 25 -X POST -H 'Content-Type: application/json' -d '{"action":"info"}' https://superagent-269bfe30.base44.app/functions/kaleidoscopeRadio)
-          echo "$info" | head -c 400
-          songs=$(printf '%s' "$info" | python3 -c "import json,sys
-try:
-    d=json.load(sys.stdin); print(len(d.get('songs') or []))
-except Exception:
-    print(0)" 2>/dev/null)
-          [ -z "$songs" ] && songs=0
-          echo "songs=$songs" >> "$GITHUB_OUTPUT"
+          out=$(python3 check_station.py)
+          echo "$out"
+          echo "songs=$(printf '%s\n' "$out" | grep '^songs=' | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
       - name: Heal the library
-        if: ${{ steps.check.outputs.songs < 50 }}
+        if: ${{ fromJSON(steps.check.outputs.songs || '0') < 50 }}
         env:
           MANDY_PAT: ${{ secrets.MANDY_PAT }}
-        run: |
-          set -e
-          b64=$(base64 -w0 heal.py)
-          python3 - "$b64" <<'PY'
-          import json, os, sys, urllib.request
-          b64 = sys.argv[1]
-          pat = os.environ["MANDY_PAT"]
-          cmd = ("echo %s | base64 -d > /home/user/radio/heal.py; "
-                 "cd /home/user/radio && (MANDY_PAT=%s nohup python3 heal.py > heal.log 2>&1 &) ; echo healing") % (b64, pat)
-          body = json.dumps({"action": "run", "command": cmd}).encode()
-          req = urllib.request.Request(
-              "https://superagent-269bfe30.base44.app/functions/kaleidoscopeRadio",
-              data=body, headers={"Content-Type": "application/json"}, method="POST")
-          print(urllib.request.urlopen(req, timeout=60).read()[:300].decode())
-          PY
+        run: python3 trigger_heal.py
+
+      - name: Report
+        if: always()
+        run: echo "station had ${{ steps.check.outputs.songs }} songs"
