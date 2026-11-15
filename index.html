@@ -40,7 +40,7 @@ function startAt(off){
   if(p&&p.catch)p.catch(function(){SAY("Tap Listen live once more to start the music.");});
 }
 function PLAY(){
-  if(!S){SAY("Still loading the station playlist, try again in a moment.");return;}
+  if(!S){SAY("Loading the playlist, the music will start by itself in a moment.");window.__wantPlay=1;return;}
   var c=CALC(),s=S.songs[c.i];
   if(!A){A=new Audio();A.preload="auto";A.addEventListener("ended",function(){PLAY();});}
   A.src=s.u;
@@ -49,14 +49,16 @@ function PLAY(){
 }
 function LOAD(){
   fetch("schedule.json",{cache:"no-store"}).then(function(r){return r.json();}).then(function(d){
-    S=d;var c=CALC();NOW("Ready. Now playing: "+TITLE(S.songs[c.i].n));SAY("Station ready. Press Listen live.");
+    S=d;var c=CALC();NOW("Ready. Now playing: "+TITLE(S.songs[c.i].n));SAY("Station ready. Press Listen live.");if(window.__wantPlay){window.__wantPlay=0;PLAY();}
   }).catch(function(){SAY("No connection, trying again in 10 seconds.");setTimeout(LOAD,10000);});
 }
 document.getElementById("pbtn").addEventListener("click",PLAY);
 document.getElementById("sbtn").addEventListener("click",function(){if(!S)return;var c=CALC(),t=TITLE(S.songs[c.i].n);NOW("Now playing: "+t);SAY("Now playing: "+t);});
 document.getElementById("vup").addEventListener("click",function(){if(!A)return;A.volume=Math.min(1,A.volume+0.2);SAY("Volume "+Math.round(A.volume*100)+" percent");});
 document.getElementById("vdn").addEventListener("click",function(){if(!A)return;A.volume=Math.max(0,A.volume-0.2);SAY("Volume "+Math.round(A.volume*100)+" percent");});
-setInterval(function(){if(!A||A.paused||!S)return;var c=CALC();if(Math.abs(A.currentTime-c.off)>3){try{A.currentTime=c.off;}catch(e){}}NOW("Now playing: "+TITLE(S.songs[c.i].n));},20000);
+function mmss(x){x=Math.max(0,Math.floor(x||0));var m=Math.floor(x/60),q=x%60;return m+":"+(q<10?"0":"")+q;}
+setInterval(function(){if(!S)return;var c=CALC();var t="Now playing: "+TITLE(S.songs[c.i].n);if(A&&!A.paused){t=t+" ("+mmss(A.currentTime)+" of "+mmss(A.duration)+")";}NOW(t);},2000);
+setInterval(function(){if(!A||A.paused||!S)return;var c=CALC();if(Math.abs(A.currentTime-c.off)>3){try{A.currentTime=c.off;}catch(e){}}},20000);
 LOAD();
 })();
 </script>
