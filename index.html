@@ -5,61 +5,69 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kaleidoscope Online - live music</title>
 <style>
-body{font-family:Verdana,sans-serif;background:#101828;color:#fff;text-align:center;padding:24px 14px;font-size:22px}
-h1{font-size:40px;color:#7ee0ff;margin:0 0 6px}
-.tag{font-size:20px;color:#ffd166;margin:0 0 22px}
-button{display:block;width:100%;max-width:640px;margin:0 auto 14px;padding:24px;font-size:26px;font-weight:bold;border:none;border-radius:16px;color:#fff}
+body{font-family:Verdana,sans-serif;background:#101828;color:#fff;text-align:center;padding:22px 14px;font-size:22px}
+h1{font-size:38px;color:#7ee0ff;margin:0 0 6px}
+.tag{font-size:19px;color:#ffd166;margin:0 0 20px}
+button{display:block;width:100%;max-width:640px;margin:0 auto 14px;padding:24px;font-size:26px;font-weight:bold;border:none;border-radius:16px;color:#fff;background:#1f3b63}
 #pbtn{background:#2bb673}
-.b2{background:#1f3b63}
-.half{display:inline-block;width:47%;max-width:300px;margin:0 1% 14px;padding:22px;font-size:24px;font-weight:bold;border:none;border-radius:16px;color:#fff;background:#1f3b63}
-#now2{font-size:22px;color:#cfe9ff;max-width:640px;margin:18px auto 0}
-#say{font-size:20px;color:#7ee0ff;max-width:640px;margin:8px auto 0;min-height:24px}
-.note{font-size:17px;color:#9fb8d0;max-width:640px;margin:26px auto 0}
+.half{display:inline-block;width:47%;max-width:300px;margin:0 1% 14px;padding:22px;font-size:23px;font-weight:bold;border:none;border-radius:16px;color:#fff;background:#1f3b63}
+#now2{font-size:22px;color:#cfe9ff;max-width:640px;margin:16px auto 0}
+#say{font-size:20px;color:#7ee0ff;max-width:640px;margin:8px auto 0;min-height:26px}
+.note{font-size:16px;color:#9fb8d0;max-width:640px;margin:24px auto 0}
 </style>
 </head>
 <body>
 <h1>Kaleidoscope Online</h1>
 <p class="tag">Radio for blind people, in South Africa and overseas</p>
-<button id="pbtn">Listen live</button>
-<button id="sbtn" class="b2">What is playing now</button>
+<button id="pbtn">Play the station</button>
+<button id="sbtn">What is playing now</button>
 <button id="vup" class="half">Volume up</button><button id="vdn" class="half">Volume down</button>
-<p id="now2">Loading the playlist...</p>
+<p id="now2">Connecting to the station...</p>
 <p id="say" role="status" aria-live="polite"></p>
-<p class="note">While the studio is offline there is no live microphone. The music plays from the station playlist and everybody hears the same song at the same moment.</p>
+<p class="note">This plays the real station, so you hear the live programmes and the microphone too. If the studio is asleep it may take half a minute to wake up.</p>
 <script>
 (function(){
-var S=null,A=null;
-var SAY=function(t){var e=document.getElementById("say");if(e)e.textContent=t;};
-var NOW=function(t){var e=document.getElementById("now2");if(e)e.textContent=t;};
-var TITLE=function(n){return n.replace(/\.mp3$/i,"").replace(/_/g," ").replace(/\s+/g," ");};
-var TOTAL=function(){var s=0,i=0;for(i=0;i<S.songs.length;i++)s+=S.songs[i].d;return s;};
-var CALC=function(){var now=Date.now()/1000,tot=TOTAL(),pos=(now-S.epoch)%tot;if(pos<0)pos+=tot;var acc=0,i=0;for(i=0;i<S.songs.length;i++){if(acc+S.songs[i].d>pos)return {i:i,off:pos-acc};acc+=S.songs[i].d;}return {i:0,off:0};};
-function startAt(off){
-  try{A.currentTime=off;}catch(e){}
-  var p=A.play();
-  if(p&&p.catch)p.catch(function(){SAY("Tap Listen live once more to start the music.");});
-}
-function PLAY(){
-  if(!S){SAY("Loading the playlist, the music will start by itself in a moment.");window.__wantPlay=1;return;}
-  var c=CALC(),s=S.songs[c.i];
-  if(!A){A=new Audio();A.preload="auto";A.addEventListener("ended",function(){PLAY();});A.addEventListener("playing",function(){SAY("Music playing.");});A.addEventListener("error",function(){var c=(A.error&&A.error.code)||0;SAY("The audio could not start, code "+c+". Tap Listen live to try again.");});}
-  A.src=s.u;
-  A.addEventListener("loadedmetadata",function(){startAt(c.off);},{once:true});
-  NOW("Now playing: "+TITLE(s.n));SAY("Now playing: "+TITLE(s.n)+". Press Pause anytime with your media keys.");
-}
-function LOAD(){
-  fetch("schedule.json",{cache:"no-store"}).then(function(r){return r.json();}).then(function(d){
-    S=d;var c=CALC();NOW("Ready. Now playing: "+TITLE(S.songs[c.i].n));SAY("Station ready. Press Listen live.");if(window.__wantPlay){window.__wantPlay=0;PLAY();}
-  }).catch(function(){SAY("No connection, trying again in 10 seconds.");setTimeout(LOAD,10000);});
-}
-document.getElementById("pbtn").addEventListener("click",PLAY);
-document.getElementById("sbtn").addEventListener("click",function(){if(!S)return;var c=CALC(),t=TITLE(S.songs[c.i].n);NOW("Now playing: "+t);SAY("Now playing: "+t);});
-document.getElementById("vup").addEventListener("click",function(){if(!A)return;A.volume=Math.min(1,A.volume+0.2);SAY("Volume "+Math.round(A.volume*100)+" percent");});
-document.getElementById("vdn").addEventListener("click",function(){if(!A)return;A.volume=Math.max(0,A.volume-0.2);SAY("Volume "+Math.round(A.volume*100)+" percent");});
+var LIVE="https://superagent-269bfe30.base44.app/functions/kaleidoscopeRadio?go=stream";
+var NP="https://superagent-269bfe30.base44.app/functions/kaleidoscopeRadio?action=np";
+var A=null,fails=0,tries=0,npTimer=null,liveSaid=false,cur="";
+function $(i){return document.getElementById(i);}
+function SAY(t){var e=$("say");if(e)e.textContent=t;}
+function NOW(t){var e=$("now2");if(e)e.textContent=t;}
 function mmss(x){x=Math.max(0,Math.floor(x||0));var m=Math.floor(x/60),q=x%60;return m+":"+(q<10?"0":"")+q;}
-setInterval(function(){if(!S)return;var c=CALC();var t="Now playing: "+TITLE(S.songs[c.i].n);if(A&&!A.paused){t=t+" ("+mmss(A.currentTime)+" of "+mmss(A.duration)+")";}NOW(t);},2000);
-setInterval(function(){if(!A||A.paused||!S)return;var c=CALC();if(Math.abs(A.currentTime-c.off)>3){try{A.currentTime=c.off;}catch(e){}}},20000);
-LOAD();
+function attach(){
+  A=new Audio();A.preload="none";
+  A.addEventListener("playing",function(){fails=0;SAY("Music playing.");});
+  A.addEventListener("error",function(){fails++;NOW("Reconnecting to the station...");setTimeout(play,6000);});
+  A.addEventListener("stalled",function(){setTimeout(function(){if(A&&A.readyState<3)play();},4000);});
+  A.addEventListener("ended",function(){setTimeout(play,3000);});
+}
+function play(){
+  if(!A)attach();
+  var p=A.play?null:null;
+  try{A.src=LIVE+"&r="+Date.now();}catch(e){}
+  var pr=A.play();
+  if(pr&&pr.catch)pr.catch(function(){SAY("Tap Play the station once more to start.");});
+}
+function pollNP(){
+  fetch(NP,{cache:"no-store"}).then(function(r){return r.json();}).then(function(d){
+    if(d&&d.closed){NOW("The station is closed for the night. Back at 05:00.");return;}
+    if(d&&d.np){cur=String(d.np).replace(/_/g," ");NOW("Now playing: "+cur+(d.listeners?"   ("+d.listeners+" listening)":""));}
+    if(d&&d.live&&!liveSaid){liveSaid=true;SAY("Live from the studio now.");}
+    if(d&&!d.live)liveSaid=false;
+  }).catch(function(){});
+}
+$("pbtn").addEventListener("click",function(){fails=0;tries++;SAY("Connecting...");play();});
+$("sbtn").addEventListener("click",function(){
+  var t=cur?("Now playing: "+cur):"";
+  if(A&&!A.paused&&A.duration)t=t+" ("+mmss(A.currentTime)+" of "+mmss(A.duration)+")";
+  if(!t)t="Still connecting, try again in a moment.";
+  NOW(t);SAY(t);
+});
+$("vup").addEventListener("click",function(){if(!A)return;A.volume=Math.min(1,A.volume+0.2);SAY("Volume "+Math.round(A.volume*100)+" percent");});
+$("vdn").addEventListener("click",function(){if(!A)return;A.volume=Math.max(0,A.volume-0.2);SAY("Volume "+Math.round(A.volume*100)+" percent");});
+setInterval(function(){if(A&&!A.paused&&cur)NOW("Now playing: "+cur+" ("+mmss(A.currentTime)+")");},5000);
+setInterval(pollNP,15000);
+pollNP();
 })();
 </script>
 </body>
