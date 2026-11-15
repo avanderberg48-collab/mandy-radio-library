@@ -42,7 +42,7 @@ function startAt(off){
 function PLAY(){
   if(!S){SAY("Loading the playlist, the music will start by itself in a moment.");window.__wantPlay=1;return;}
   var c=CALC(),s=S.songs[c.i];
-  if(!A){A=new Audio();A.preload="auto";A.addEventListener("ended",function(){PLAY();});}
+  if(!A){A=new Audio();A.preload="auto";A.addEventListener("ended",function(){PLAY();});A.addEventListener("playing",function(){SAY("Music playing.");});A.addEventListener("error",function(){var c=(A.error&&A.error.code)||0;SAY("The audio could not start, code "+c+". Tap Listen live to try again.");});}
   A.src=s.u;
   A.addEventListener("loadedmetadata",function(){startAt(c.off);},{once:true});
   NOW("Now playing: "+TITLE(s.n));SAY("Now playing: "+TITLE(s.n)+". Press Pause anytime with your media keys.");
